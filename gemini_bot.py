@@ -53,13 +53,13 @@ parser.add_argument('amount_currency',
                     help="The currency the amount is denominated in")
 
 # Additional options
-parser.add_argument('-sandbox',
+parser.add_argument('-s', '--sandbox',
                     action="store_true",
                     default=False,
                     dest="sandbox_mode",
                     help="Run against sandbox, skips user confirmation prompt")
 
-parser.add_argument('-warn_after',
+parser.add_argument('-w', '-warn_after',
                     default=300,
                     action="store",
                     type=int,
