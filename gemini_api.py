@@ -117,7 +117,7 @@ class GeminiApiConnection(object):
             "price": str(price),
             "side": side,
             "type": "exchange limit",
-            "options": ["maker-or-cancel"]  
+            "options": ["maker-or-cancel"]
         }
         return self._make_authenticated_request("POST", "/order/new", payload=payload)
 
