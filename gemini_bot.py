@@ -58,12 +58,6 @@ parser.add_argument('-w', '--warn_after',
                     dest="warn_after",
                     help="secs to wait before sending an alert that an order isn't done")
 
-parser.add_argument('-j', '--job',
-                    action="store_true",
-                    default=False,
-                    dest="job_mode",
-                    help="Suppresses user confirmation prompt")
-
 parser.add_argument('-c', '--config',
                     default="settings.conf",
                     dest="config_file",
@@ -92,7 +86,6 @@ if __name__ == "__main__":
     amount_currency = args.amount_currency
 
     sandbox_mode = args.sandbox_mode
-    job_mode = args.job_mode
     warn_after = args.warn_after
 
     # Shut up urllib logs
@@ -102,7 +95,6 @@ if __name__ == "__main__":
     logging.info(f"Market Name: {market_name}")
     logging.info(f"Order Side: {order_side}")
     logging.info(f"Amount: {amount} {amount_currency}")
-    logging.info(f"SNS: {use_sns}")
 
     if sandbox_mode:
         mode = "Sandbox"
@@ -110,12 +102,6 @@ if __name__ == "__main__":
         mode = "Production"
 
     logging.info(f"Mode: {mode}")
-
-    if not sandbox_mode and not job_mode:
-        response = input("Production purchase! Confirm [Y]: ")
-        if response != 'Y':
-            print("Exiting without submitting purchase.")
-            exit()
 
     # Read settings
     config = configparser.ConfigParser()

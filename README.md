@@ -120,10 +120,8 @@ The best way to run this script is via a cronjob as this gives us the Dollar Cos
 
 I would suggest using the full paths to the python venv python, `gemini_bot.py`, and the `settings.conf` file as below. This usually gets around many common cron issues.
 
-Remember to include `--job` in the cron line or it'll hang waiting for confirmation and never run.
-
 ```
-05 */2 * * * /path/to/geminibot/bot/venv/bin/python gemini_bot.py /path/to/geminibot/bot/gemini_bot.py --job --config /var/lib/geminibot/bot/settings.conf BTCUSD BUY 5.00 BTC
+05 */2 * * * /path/to/geminibot/bot/venv/bin/python gemini_bot.py /path/to/geminibot/bot/gemini_bot.py --config /var/lib/geminibot/bot/settings.conf BTCUSD BUY 5.00 BTC
 ```
 
 This will buy USD$5 worth of BTC every other hour at 5min past the hour.
