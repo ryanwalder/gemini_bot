@@ -185,7 +185,7 @@ if __name__ == "__main__":
                 f"{e.response_json.get('reason')}"
             )
             print(json.dumps(e.response_json, indent=4))
-            exit()
+            sys.exit(1)
 
         logging.info(f"Order Placed")
         logging.info(f"Order ID: {result.get('order_id')}")
@@ -208,7 +208,7 @@ if __name__ == "__main__":
                 f"{market_name} {order_side} order of {amount} "
                 f"{amount_currency} OPEN/UNFILLED"
             )
-            exit()
+            sys.exit(1)
 
         if order.get('is_cancelled'):
             # Most likely the order was manually cancelled in the UI
@@ -216,7 +216,7 @@ if __name__ == "__main__":
                 f"{market_name} {order_side} order of {amount} "
                 f"{amount_currency} CANCELLED"
             )
-            exit()
+            sys.exit(1)
 
         logging.info(
             f"Order {order_id} still pending. "
@@ -232,3 +232,4 @@ if __name__ == "__main__":
         f"complete @ {midmarket_price} {quote_currency}"
     )
 
+    sys.exit(0)
