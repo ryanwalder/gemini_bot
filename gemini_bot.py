@@ -6,9 +6,11 @@ import configparser
 import datetime
 import decimal
 import json
+import logging
 import math
-import requests
 import os
+import requests
+import sys
 import time
 
 from decimal import Decimal
@@ -39,7 +41,8 @@ parser = argparse.ArgumentParser(
 )
 
 # Required positional arguments
-parser.add_argument('market_name', help="(e.g. BTCUSD, ETHBTC, etc)")
+parser.add_argument('market_name',
+                    help="(e.g. BTCUSD, ETHBTC, etc)")
 
 parser.add_argument('order_side',
                     type=str,
@@ -59,7 +62,7 @@ parser.add_argument('-s', '--sandbox',
                     dest="sandbox_mode",
                     help="Run against sandbox, skips user confirmation prompt")
 
-parser.add_argument('-w', '-warn_after',
+parser.add_argument('-w', '--warn_after',
                     default=300,
                     action="store",
                     type=int,
@@ -83,9 +86,22 @@ parser.add_argument('--sns',
                     dest="sns",
                     help="Optionally post to an SNS topic")
 
+parser.add_argument('-l', '--log-level',
+                    default='warning',
+                    dest="loglevel",
+                    help="Set loglevel of script")
+
 
 if __name__ == "__main__":
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=args.loglevel.upper(),
+        format="%(asctime)s.%(msecs)03dZ: %(levelname)s: %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+    )
+
+    logging.debug("Parsing options")
 
     market_name = args.market_name
     order_side = args.order_side.lower()
@@ -96,6 +112,22 @@ if __name__ == "__main__":
     job_mode = args.job_mode
     warn_after = args.warn_after
     use_sns = args.sns
+
+    # Shut up urllib logs
+    log = logging.getLogger('urllib3')
+    log.setLevel(logging.INFO)
+
+    logging.info(f"Market Name: {market_name}")
+    logging.info(f"Order Side: {order_side}")
+    logging.info(f"Amount: {amount} {amount_currency}")
+    logging.info(f"SNS: {use_sns}")
+
+    if sandbox_mode:
+        mode = "Sandbox"
+    else:
+        mode = "Production"
+
+    logging.info(f"Mode: {mode}")
 
     if not sandbox_mode and not job_mode:
         response = input("Production purchase! Confirm [Y]: ")
@@ -113,6 +145,7 @@ if __name__ == "__main__":
 
     client_key = config.get(config_section, 'CLIENT_KEY')
     secret_key = config.get(config_section, 'CLIENT_SECRET')
+    logging.debug("Loaded Config")
 
     if use_sns:
         sns_topic = config.get(config_section, 'SNS_TOPIC')
@@ -123,6 +156,7 @@ if __name__ == "__main__":
     gemini_api_conn = GeminiApiConnection(client_key=client_key, client_secret=secret_key, sandbox=sandbox_mode)
 
     # Configure the market details
+    logging.debug("Getting market details")
     symbol_details = gemini_api_conn.symbol_details(market_name)
 
     base_currency = symbol_details.get("base_currency")
@@ -137,9 +171,9 @@ if __name__ == "__main__":
     else:
         raise Exception(f"amount_currency {amount_currency} not in market {market_name}")
 
-    print(f"base_min_size: {base_min_size}")
-    print(f"base_increment: {base_increment}")
-    print(f"quote_increment: {quote_increment}")
+    logging.info(f"Minimum order size: : {base_min_size}")
+    logging.info(f"Base increment: {base_increment}")
+    logging.info(f"Quote increment: {quote_increment}")
 
     # Prep boto SNS client for email notifications
     if use_sns:
@@ -161,14 +195,16 @@ if __name__ == "__main__":
             midmarket_price = (math.floor((ask + bid) / Decimal('2.0') / quote_increment) * quote_increment).quantize(quote_increment, decimal.ROUND_DOWN)
         else:
             midmarket_price = (math.floor((ask + bid) / Decimal('2.0') / quote_increment) * quote_increment).quantize(quote_increment, decimal.ROUND_UP)
-        print(f"ask: ${ask}")
-        print(f"bid: ${bid}")
-        print(f"midmarket_price: ${midmarket_price}")
+
+        logging.info(f"Ask: {ask} {base_currency}")
+        logging.info(f"Bid: {bid} {base_currency}")
+        logging.info(f"Midmarket Price: ${midmarket_price}")
 
         return midmarket_price
 
 
     def place_order(price):
+        logging.debug("Placing order")
         try:
             if amount_currency_is_quote_currency:
                 result = gemini_api_conn.new_order(
@@ -185,6 +221,10 @@ if __name__ == "__main__":
                     price=price
                 )
         except GeminiRequestException as e:
+            logging.error(
+                f"Unable to place {base_currency} {order_side}: "
+                f"{e.response_json.get('reason')}"
+            )
             if use_sns:
                 sns.publish(
                     TopicArn=sns_topic,
@@ -193,14 +233,16 @@ if __name__ == "__main__":
                 )
             print(json.dumps(e.response_json, indent=4))
             exit()
+
+        logging.info(f"Order Placed")
+        logging.info(f"Order ID: {result.get('order_id')}")
+        logging.info(f"Coin Price: {result.get('price')} {amount_currency}")
+        logging.info(f"Order Amount: {result.get('original_amount')}")
         return result
 
 
     midmarket_price = calculate_midmarket_price()
     order = place_order(midmarket_price)
-
-    print(json.dumps(order, indent=2))
-
     order_id = order.get("order_id")
 
     # Set up monitoring loop for the next hour
@@ -209,6 +251,10 @@ if __name__ == "__main__":
     retries = 0
     while Decimal(order.get('remaining_amount')) > Decimal('0'):
         if total_wait_time > warn_after:
+            logging.info(
+                f"{market_name} {order_side} order of {amount} "
+                f"{amount_currency} OPEN/UNFILLED"
+            )
             if use_sns:
                 sns.publish(
                     TopicArn=sns_topic,
@@ -219,6 +265,10 @@ if __name__ == "__main__":
 
         if order.get('is_cancelled'):
             # Most likely the order was manually cancelled in the UI
+            logging.info(
+                f"{market_name} {order_side} order of {amount} "
+                f"{amount_currency} CANCELLED"
+            )
             if use_sns:
                 sns.publish(
                     TopicArn=sns_topic,
@@ -227,16 +277,21 @@ if __name__ == "__main__":
                 )
             exit()
 
-        print(f"{get_timestamp()}: Order {order_id} still pending. Sleeping for {wait_time} (total {total_wait_time})")
+        logging.info(
+            f"Order {order_id} still pending. "
+            f"Sleeping for {wait_time} (total {total_wait_time})"
+        )
         time.sleep(wait_time)
         total_wait_time += wait_time
         order = gemini_api_conn.order_status(order_id=order_id)
 
     # Order status is no longer pending!
-    print(json.dumps(order, indent=2))
+    logging.info(
+        f"{market_name} {order_side} order of {amount} {amount_currency} "
+        f"complete @ {midmarket_price} {quote_currency}"
+    )
 
     subject = f"{market_name} {order_side} order of {amount} {amount_currency} complete @ {midmarket_price} {quote_currency}"
-    print(subject)
     if use_sns:
         sns.publish(
             TopicArn=sns_topic,
