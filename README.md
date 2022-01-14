@@ -1,15 +1,78 @@
 # gemini_bot
-Simple Gemini DCA bot
 
-The normal [Gemini](https://www.gemini.com/share/v588gelc8) web or app platforms charge pretty high fees, comparable to Coinbase. But this bot takes advantage of their API fee structure which is completely different and is insanely cheap. It creates a "maker-or-cancel" limit buy or sell order and only incurs their super-low 0.1% "maker" API fee (as opposed to their still very low 0.35% "taker" API fee). That means the fee on a $100 order would be 10¢!
+A Simple Gemini DCA bot.
 
-Run this bot as a repeating cron job to dollar cost average (DCA) your buys or sells for nearly zero fees.
+Forked and modified from [gemini_bot](https://github.com/kdmukai/gemini_bot) by [kdmukai](https://github.com/kdmukai).
 
-Current Gemini minimum API orders are 0.00001 for bitcoin which allows for extremely small orders (0.00001 btc @ $60k = $0.60!). I strongly recommend making LOTS of small, frequent orders rather than a few large ones. Learn more about what I call [micro dollar cost averaging](https://github.com/kdmukai/gdax_bot/blob/master/README.md#basic-investing-strategy-dollar-cost-averaging).
+## Overview
 
+This script is designed to make regular crypto purchases to achieve µDCA while minimizing fees as described below.
 
-### Usage
-Run ```python gemini_bot.py -h``` for usage information:
+### Dollar Cost Averaging
+
+You have to be extremely lucky or extremely good to time the market perfectly. Rather than trying to achieve the perfect timing for when to execute a purchase Dollar Cost Averaging buys smaller amounts over a longer period of time to average out the peaks and valleys.
+
+I'd rather invest $20 every day for a month than agonize over deciding on just the right time to do a single $600 buy.
+
+### Micro Dollar Cost Averaging
+
+Taking it a step further, The crypto world is so volatile that making a single, regular buy once a day is still leaving too much to chance. The market can swing 30%, 50%, even 100%+ in a single day.
+
+Unfortunately many platforms (including Gemini) will charge a large fee for setting up recurring purchases, sometimes as high as 10% of the total for smaller purchases. And the minimum periods for a purchase is usually a day.
+
+Current Gemini minimum API orders are 0.00001 for bitcoin which allows for extremely small orders (0.00001 btc @ $60k = $0.60!). Let's leverage the API to implement out own µDCA strategy to smooth out the volatility of a day.
+
+## Fees
+
+Using a platform's built in DCA/Scheduled buys you can pay as much as 10% in fees. Using the API Gemini charges 0.35% in fees.
+
+Over a year, spending $20 a day this works out as:
+
+|Total|Fee %|Fees|Spent on Coins|
+|---|---|---|---|
+|$7300|10%|$730|$6570.0|
+|$7300|0.35%|$25.55|$7274.45|
+
+As you can see in this example you have saved $681.90 in fees and spent that instead on the crypto you actually wanted.
+
+## Installation
+
+0. Ensure you have python3 installed on your system
+    * Debian/Ubuntu: `sudo apt install python3 python3-pip python3-venv`
+    * Arch: `sudo pacman -Syyu python-pip python-virtualenv`
+0. Clone this repo
+    * `git clone https://github.com/ryanwalder/gemini_bot`
+0. Create a virtualenv
+    * `cd gemini_bot`
+    * `python -m venv venv`
+    * `source venv/bin/activate`
+0. Install requirements via `requirements.txt`
+    * `pip install -r requirements.txt`
+
+## Setup
+
+0. Create a [Gemini account](https://www.gemini.com/)
+0. Complete the KYC Verification steps.
+0. Generate an API key for your account
+    * Scope: "primary"
+    * Permissions: "Trading"
+0. Copy `settings.conf.example` to `settings.conf`
+0. Update the `CLIENT_KEY` and `CLIENT_SECRET` in the `[production]` section.
+0. Add fiat to your Gemini account. 
+
+### Sandbox
+
+If you just want to test the script or are hacking on the script and you don't want to use real money then sign up for an account on the [Gemini Sandbox](https://exchange.sandbox.gemini.com/) and complete steps 3-5 above using the `[sandbox]` section of the config file.
+
+> Note: If you use any currency other than USD you will need to manually sell some of the tokens to get some fiat in the account.
+
+### Optional: Create AWS SNS topic
+
+The bot can optionally send emails via [AWS SNS](https://aws.amazon.com/). You will need to configure SNS and setup `SNS_TOPIC` `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` in relevant `[production]` or `[sandbox]` section in the `settings.conf` file.
+
+Once you have configures SNS in `settings.conf` you can then add `--sns` to the command line arguments.
+
+## Usage
 
 ```
 usage: gemini_bot.py [-h] [-s] [-w WARN_AFTER] [-j] [-c CONFIG_FILE] [--sns]
@@ -45,33 +108,30 @@ options:
 ```
 
 
-## Setup:
-Create a [Gemini account](https://www.gemini.com/share/v588gelc8) and go through the additional identity verification in order to create an API key.
 
-Generate an API key for your account:
-* Scope: "primary"
-* Permissions: "Trading"
+### Run manually
 
-Copy `settings.conf.example` to `settings.conf` and enter the API client key and client secret.
+You can run this manually for one-off buys or sells.
 
-
-### Optional: Create AWS SNS topic
-The bot will post a status message to an SNS topic that can be forwarded to your email. Add the `SNS_TOPIC` and your AWS IAM access credentials to the `settings.conf` file to enable this option.
-
-
-### Python virtualenv
-Create a virtualenv for the project and then install the dependencies:
 ```
-pip install -r requirements.txt
+cd gemini_bot
+/path/to/gemini_bot/venv/bin/python gemini_bot.py --sandbox BTCUSD BUY 5 BTC
 ```
 
+This will call the sandbox Gemini API to place a "Maker-or-Cancel" buy order for USD$5 worth of Bitcoin.
 
-### Run manually or via cron job
-You can run this manually for one-off buys or sells but it's really meant to be run as a repeating cron job.
+To run on production and use real money ensure you have money in your account in the right currency and remove `--sandbox` from the above command.
 
-For example:
+### Run via cron
+
+The best way to run this script is via a cronjob as this gives us the Dollar Cost Averaging describes above.
+
+I would suggest using the full paths to the python venv python, `gemini_bot.py`, and the `settings.conf` file as below. This usually gets around many common cron issues.
+
+Remember to include `--job` in the cron line or it'll hang waiting for confirmation and never run.
+
 ```
-05 */2 * * * cd /my/gemini_bot/dir && /my/.envs/gemini_bot-env/bin/python -u gemini_bot.py BTCUSD BUY 5.00 BTC
+05 */2 * * * /path/to/geminibot/bot/venv/bin/python gemini_bot.py /path/to/geminibot/bot/gemini_bot.py --job --config /var/lib/geminibot/bot/settings.conf BTCUSD BUY 5.00 BTC
 ```
 
-This will buy $5 worth of BTC every other hour at 5min past the hour.
+This will buy USD$5 worth of BTC every other hour at 5min past the hour.
