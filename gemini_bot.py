@@ -17,11 +17,6 @@ from decimal import Decimal
 
 from gemini_api import GeminiApiConnection, GeminiRequestException
 
-"""
-    Gemini API docs: https://docs.gemini.com/rest-api/
-"""
-
-
 def get_timestamp():
     ts = time.time()
     return datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
