@@ -12,7 +12,8 @@ Current Gemini minimum API orders are 0.00001 for bitcoin which allows for extre
 Run ```python gemini_bot.py -h``` for usage information:
 
 ```
-usage: gemini_bot.py [-h] [-sandbox] [-warn_after WARN_AFTER] [-j] [-c CONFIG_FILE]
+usage: gemini_bot.py [-h] [-s] [-w WARN_AFTER] [-j] [-c CONFIG_FILE] [--sns]
+                     [-l LOGLEVEL]
                      market_name {BUY,SELL} amount amount_currency
 
         Basic Gemini DCA buying/selling bot.
@@ -30,14 +31,17 @@ positional arguments:
   amount                The quantity to buy or sell in the amount_currency
   amount_currency       The currency the amount is denominated in
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  -sandbox              Run against sandbox, skips user confirmation prompt
-  -warn_after WARN_AFTER
+  -s, --sandbox         Run against sandbox, skips user confirmation prompt
+  -w WARN_AFTER, --warn_after WARN_AFTER
                         secs to wait before sending an alert that an order isn't done
   -j, --job             Suppresses user confirmation prompt
   -c CONFIG_FILE, --config CONFIG_FILE
                         Override default config file location
+  --sns                 Optionally post to an SNS topic
+  -l LOGLEVEL, --log-level LOGLEVEL
+                        Set loglevel of script
 ```
 
 
