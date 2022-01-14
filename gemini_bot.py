@@ -15,7 +15,6 @@ from decimal import Decimal
 
 from gemini_api import GeminiApiConnection, GeminiRequestException
 
-
 parser = argparse.ArgumentParser(
     description="""
         Basic Gemini DCA buying/selling bot.
