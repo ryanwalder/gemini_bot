@@ -80,12 +80,6 @@ parser.add_argument('-c', '--config',
                     dest="config_file",
                     help="Override default config file location")
 
-parser.add_argument('--sns',
-                    action="store_true",
-                    default=False,
-                    dest="sns",
-                    help="Optionally post to an SNS topic")
-
 parser.add_argument('-l', '--log-level',
                     default='warning',
                     dest="loglevel",
@@ -111,7 +105,6 @@ if __name__ == "__main__":
     sandbox_mode = args.sandbox_mode
     job_mode = args.job_mode
     warn_after = args.warn_after
-    use_sns = args.sns
 
     # Shut up urllib logs
     log = logging.getLogger('urllib3')
@@ -147,12 +140,6 @@ if __name__ == "__main__":
     secret_key = config.get(config_section, 'CLIENT_SECRET')
     logging.debug("Loaded Config")
 
-    if use_sns:
-        sns_topic = config.get(config_section, 'SNS_TOPIC')
-        aws_access_key_id = config.get(config_section, 'AWS_ACCESS_KEY_ID')
-        aws_secret_access_key = config.get(config_section, 'AWS_SECRET_ACCESS_KEY')
-        aws_region = config.get(config_section, 'AWS_REGION')
-
     gemini_api_conn = GeminiApiConnection(client_key=client_key, client_secret=secret_key, sandbox=sandbox_mode)
 
     # Configure the market details
@@ -174,15 +161,6 @@ if __name__ == "__main__":
     logging.info(f"Minimum order size: : {base_min_size}")
     logging.info(f"Base increment: {base_increment}")
     logging.info(f"Quote increment: {quote_increment}")
-
-    # Prep boto SNS client for email notifications
-    if use_sns:
-        sns = boto3.client(
-            "sns",
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            region_name=aws_region
-        )
 
     def calculate_midmarket_price():
         order_book = gemini_api_conn.current_order_book(market_name)
@@ -225,12 +203,6 @@ if __name__ == "__main__":
                 f"Unable to place {base_currency} {order_side}: "
                 f"{e.response_json.get('reason')}"
             )
-            if use_sns:
-                sns.publish(
-                    TopicArn=sns_topic,
-                    Subject=f"ERROR placing {base_currency} {order_side} order: {e.response_json.get('reason')}",
-                    Message=json.dumps(e.response_json, indent=4)
-                )
             print(json.dumps(e.response_json, indent=4))
             exit()
 
@@ -255,12 +227,6 @@ if __name__ == "__main__":
                 f"{market_name} {order_side} order of {amount} "
                 f"{amount_currency} OPEN/UNFILLED"
             )
-            if use_sns:
-                sns.publish(
-                    TopicArn=sns_topic,
-                    Subject=f"{market_name} {order_side} order of {amount} {amount_currency} OPEN/UNFILLED",
-                    Message=json.dumps(order, indent=4)
-                )
             exit()
 
         if order.get('is_cancelled'):
@@ -269,12 +235,6 @@ if __name__ == "__main__":
                 f"{market_name} {order_side} order of {amount} "
                 f"{amount_currency} CANCELLED"
             )
-            if use_sns:
-                sns.publish(
-                    TopicArn=sns_topic,
-                    Subject=f"{market_name} {order_side} order of {amount} {amount_currency} CANCELLED",
-                    Message=json.dumps(order, sort_keys=True, indent=4)
-                )
             exit()
 
         logging.info(
@@ -290,12 +250,4 @@ if __name__ == "__main__":
         f"{market_name} {order_side} order of {amount} {amount_currency} "
         f"complete @ {midmarket_price} {quote_currency}"
     )
-
-    subject = f"{market_name} {order_side} order of {amount} {amount_currency} complete @ {midmarket_price} {quote_currency}"
-    if use_sns:
-        sns.publish(
-            TopicArn=sns_topic,
-            Subject=subject,
-            Message=json.dumps(order, sort_keys=True, indent=4)
-        )
 

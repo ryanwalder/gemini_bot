@@ -66,17 +66,10 @@ If you just want to test the script or are hacking on the script and you don't w
 
 > Note: If you use any currency other than USD you will need to manually sell some of the tokens to get some fiat in the account.
 
-### Optional: Create AWS SNS topic
-
-The bot can optionally send emails via [AWS SNS](https://aws.amazon.com/). You will need to configure SNS and setup `SNS_TOPIC` `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` in relevant `[production]` or `[sandbox]` section in the `settings.conf` file.
-
-Once you have configures SNS in `settings.conf` you can then add `--sns` to the command line arguments.
-
 ## Usage
 
 ```
-usage: gemini_bot.py [-h] [-s] [-w WARN_AFTER] [-j] [-c CONFIG_FILE] [--sns]
-                     [-l LOGLEVEL]
+usage: gemini_bot.py [-h] [-s] [-w WARN_AFTER] [-j] [-c CONFIG_FILE] [-l LOGLEVEL]
                      market_name {BUY,SELL} amount amount_currency
 
         Basic Gemini DCA buying/selling bot.
@@ -102,7 +95,6 @@ options:
   -j, --job             Suppresses user confirmation prompt
   -c CONFIG_FILE, --config CONFIG_FILE
                         Override default config file location
-  --sns                 Optionally post to an SNS topic
   -l LOGLEVEL, --log-level LOGLEVEL
                         Set loglevel of script
 ```
