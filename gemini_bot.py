@@ -217,12 +217,16 @@ if __name__ == "__main__":
         )
         time.sleep(wait_time)
         total_wait_time += wait_time
-        order = gemini_api_conn.order_status(order_id=order_id)
+        order = gemini_api_conn.order_status(order_id=order_id, include_trades=True)
 
     # Order status is no longer pending!
+    trades = order.get("trades")
+    fee_amount = sum([Decimal(t['fee_amount']) for t in trades])
+    fee_currency = trades[0]['fee_currency'] # safe, since only one currency was used
     logging.info(
         f"{market_name} {order_side} order of {amount} {amount_currency} "
-        f"complete @ {midmarket_price} {quote_currency}"
+        f"complete @ {midmarket_price} {quote_currency} "
+        f"fee: {fee_amount} {fee_currency}"
     )
 
     sys.exit(0)
