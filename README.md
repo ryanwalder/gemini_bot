@@ -58,7 +58,7 @@ As you can see in this example you have saved $681.90 in fees and spent that ins
     * Permissions: "Trading"
 0. Copy `settings.conf.example` to `settings.conf`
 0. Update the `CLIENT_KEY` and `CLIENT_SECRET` in the `[production]` section.
-0. Add fiat to your Gemini account. 
+0. Add fiat to your Gemini account.
 
 ### Sandbox
 
@@ -79,7 +79,7 @@ usage: gemini_bot.py [-h] [-s] [-w WARN_AFTER] [-j] [-c CONFIG_FILE] [-l LOGLEVE
             BTCUSD BUY 0.00125 BTC     (buy 0.00125 BTC)
             ETHBTC SELL 0.00125 BTC    (sell 0.00125 BTC worth of ETH)
             ETHBTC SELL 0.1 ETH        (sell 0.1 ETH)
-    
+
 
 positional arguments:
   market_name           (e.g. BTCUSD, ETHBTC, etc)
@@ -107,7 +107,7 @@ You can run this manually for one-off buys or sells.
 
 ```
 cd gemini_bot
-/path/to/gemini_bot/venv/bin/python gemini_bot.py --sandbox BTCUSD BUY 5 BTC
+/path/to/gemini_bot/venv/bin/python gemini_bot.py --sandbox BTCUSD BUY 5 USD
 ```
 
 This will call the sandbox Gemini API to place a "Maker-or-Cancel" buy order for USD$5 worth of Bitcoin.
@@ -121,7 +121,7 @@ The best way to run this script is via a cronjob as this gives us the Dollar Cos
 I would suggest using the full paths to the python venv python, `gemini_bot.py`, and the `settings.conf` file as below. This usually gets around many common cron issues.
 
 ```
-05 */2 * * * /path/to/geminibot/bot/venv/bin/python gemini_bot.py /path/to/geminibot/bot/gemini_bot.py --config /var/lib/geminibot/bot/settings.conf BTCUSD BUY 5.00 BTC
+05 */2 * * * /path/to/geminibot/bot/venv/bin/python gemini_bot.py /path/to/geminibot/bot/gemini_bot.py --config /var/lib/geminibot/bot/settings.conf BTCUSD BUY 5.00 USD
 ```
 
 This will buy USD$5 worth of BTC every other hour at 5min past the hour.
