@@ -127,9 +127,9 @@ class GeminiApiConnection(object):
         return self._make_authenticated_request("POST", "/order/new", payload=payload)
 
 
-    def order_status(self, order_id: str):
+    def order_status(self, order_id: str, include_trades: bool):
         payload = {
             "order_id": order_id,
-            "include_trades": False,
+            "include_trades": include_trades,
         }
         return self._make_authenticated_request("POST", "/order/status", payload=payload)
